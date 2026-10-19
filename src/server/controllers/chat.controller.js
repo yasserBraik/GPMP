@@ -67,8 +67,13 @@ function channelLink(groupId, channel) {
 // channel of that group: the Staff channel for examiners, the Group channel for everyone else.
 function linksForChannel(user, groupId, channel) {
   const defaultChannel = user.role === 'Examiner' ? 'Staff' : 'Group';
-  const links = [channelLink(groupId, channel)];
-  if (channel === defaultChannel) links.push(`/chat?groupId=${groupId}`);
+  const links = [
+    channelLink(groupId, channel),
+    `/chat?channel=${channel}&groupId=${groupId}`,
+  ];
+  if (channel === defaultChannel) {
+    links.push(`/chat?groupId=${groupId}`);
+  }
   return links;
 }
 
@@ -222,15 +227,20 @@ async function markChannelRead(user, groupId, channel) {
  */
 async function notifyChannelMembers(recipientIds, message, label) {
   const link = channelLink(message.groupId, message.channel);
+  const links = [
+    link,
+    `/chat?channel=${message.channel}&groupId=${message.groupId}`,
+    `/chat?groupId=${message.groupId}`,
+  ];
   const preview = cut(`${message.sender.name}: ${message.text}`, 500);
   const needNewNotification = [];
 
   for (const userId of recipientIds) {
     const existing = await query(
       `SELECT NotificationID AS id, Title AS title FROM notification
-        WHERE UserID = ? AND Type = 'Message' AND IsRead = 0 AND Link = ?
+        WHERE UserID = ? AND Type = 'Message' AND IsRead = 0 AND Link IN (?)
         ORDER BY CreatedAt DESC LIMIT 1`,
-      [userId, link]
+      [userId, links]
     );
     if (existing.length === 0) {
       needNewNotification.push(userId);
@@ -240,9 +250,10 @@ async function notifyChannelMembers(recipientIds, message, label) {
     const title = cut(notificationTitle(countFromTitle(existing[0].title) + 1, label), 200);
     const now = new Date();
     now.setMilliseconds(0); // DATETIME columns do not keep milliseconds
-    await query('UPDATE notification SET Title = ?, Message = ?, CreatedAt = ? WHERE NotificationID = ?', [
+    await query('UPDATE notification SET Title = ?, Message = ?, Link = ?, CreatedAt = ? WHERE NotificationID = ?', [
       title,
       preview,
+      link,
       now,
       existing[0].id,
     ]);
@@ -417,11 +428,72 @@ export async function deleteMessage(req, res) {
   if (rows.length === 0) throw new HttpError(404, 'Message not found');
 
   const row = rows[0];
-  await assertChannelMember(req.user, row.GroupID, row.MsgType);
+  const membership = await assertChannelMember(req.user, row.GroupID, row.MsgType);
   if (row.SenderUserID !== req.user.id) throw new HttpError(403, 'You can only delete your own messages.');
 
   await query('DELETE FROM chat_message WHERE ChatID = ?', [id]);
   emitToRoom(roomFor(row.GroupID, row.MsgType), 'chat:deleted', { id, groupId: row.GroupID, channel: row.MsgType });
+
+  // Clean up or decrement unread notifications for channel recipients so phantom unread badges don't persist
+  try {
+    const memberIds = await getChannelMemberIds(row.GroupID, row.MsgType);
+    const recipientIds = memberIds.filter((mId) => mId !== req.user.id);
+    const links = [
+      channelLink(row.GroupID, row.MsgType),
+      `/chat?channel=${row.MsgType}&groupId=${row.GroupID}`,
+      `/chat?groupId=${row.GroupID}`,
+    ];
+
+    // Find the newest remaining message in this channel
+    const remaining = await query(
+      `SELECT m.ChatID AS id, m.MessageText AS text, COALESCE(u.Name, 'Former user') AS senderName
+         FROM chat_message m
+         LEFT JOIN \`user\` u ON u.UserID = m.SenderUserID
+        WHERE m.GroupID = ? AND m.MsgType = ?
+        ORDER BY m.ChatID DESC LIMIT 1`,
+      [row.GroupID, row.MsgType]
+    );
+
+    const label = channelLabel(membership.groupName, row.MsgType);
+
+    for (const recipientId of recipientIds) {
+      const existing = await query(
+        `SELECT NotificationID AS id, Title AS title FROM notification
+          WHERE UserID = ? AND Type = 'Message' AND IsRead = 0 AND Link IN (?)
+          ORDER BY CreatedAt DESC LIMIT 1`,
+        [recipientId, links]
+      );
+      if (existing.length === 0) continue;
+
+      const currentCount = countFromTitle(existing[0].title);
+      if (currentCount <= 1 || remaining.length === 0) {
+        // Only 1 unread message recorded, or no messages left: remove the unread notification
+        await query('DELETE FROM notification WHERE NotificationID = ?', [existing[0].id]);
+        await emitNotificationSync(recipientId);
+      } else {
+        // Decrement unread message count and update preview to newest remaining message
+        const newCount = currentCount - 1;
+        const newTitle = cut(notificationTitle(newCount, label), 200);
+        const newPreview = cut(`${remaining[0].senderName}: ${remaining[0].text}`, 500);
+        await query('UPDATE notification SET Title = ?, Message = ? WHERE NotificationID = ?', [
+          newTitle,
+          newPreview,
+          existing[0].id,
+        ]);
+        emitToUser(recipientId, 'notification:updated', {
+          id: existing[0].id,
+          type: 'Message',
+          title: newTitle,
+          message: newPreview,
+          link: channelLink(row.GroupID, row.MsgType),
+          isRead: false,
+        });
+        await emitNotificationSync(recipientId);
+      }
+    }
+  } catch (syncErr) {
+    console.error('[chat] Notification cleanup on delete failed:', syncErr.message);
+  }
 
   res.json({ message: 'Message deleted' });
 }

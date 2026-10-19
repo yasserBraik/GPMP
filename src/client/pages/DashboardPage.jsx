@@ -17,8 +17,11 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { data, loading, error, reload } = useApi(getDashboard, [user.id]);
 
-  // New notification (message, deadline, feedback...) -> refresh the numbers
+  // Live updates: refresh the numbers and feeds quietly
   useSocketEvent('notification:new', () => reload());
+  useSocketEvent('notification:updated', () => reload());
+  useSocketEvent('notification:sync', () => reload());
+  useSocketEvent('announcement:changed', () => reload());
 
   if (loading) return <Loading text="Loading your dashboard..." />;
   if (error) return <ErrorMessage error={error} onRetry={reload} title="Could not load the dashboard" />;

@@ -92,6 +92,11 @@ export default function ChatPage() {
   }
 
   useSocketEvent('chat:message', (message) => {
+    const exists = channels?.some((c) => c.groupId === message.groupId && c.channel === message.channel);
+    if (!exists) {
+      reload();
+      return;
+    }
     const isOpenAndVisible =
       selectedKey === channelKey(message.groupId, message.channel) && document.visibilityState === 'visible';
     const fromSomeoneElse = message.sender.id !== user.id;

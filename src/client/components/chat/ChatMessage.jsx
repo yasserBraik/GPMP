@@ -16,15 +16,23 @@ import { formatTime, formatDateTime } from '../../utils/format.js';
 // Turns web addresses in the text into clickable links (React escapes everything else)
 function renderText(text) {
   const parts = text.split(/(https?:\/\/[^\s]+)/g);
-  return parts.map((part, index) =>
-    index % 2 === 1 ? (
-      <a key={index} href={part} target="_blank" rel="noreferrer">
-        {part}
-      </a>
-    ) : (
-      part
-    )
-  );
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      // Detach trailing punctuation that shouldn't be part of the URL (e.g. "https://example.com.")
+      const match = part.match(/^(.*?)([.,;:!?)]*)$/);
+      const url = match ? match[1] : part;
+      const trailing = match ? match[2] : '';
+      return (
+        <span key={index}>
+          <a href={url} target="_blank" rel="noreferrer">
+            {url}
+          </a>
+          {trailing}
+        </span>
+      );
+    }
+    return part;
+  });
 }
 
 export default function ChatMessage({ message, isOwn, showHeader, onDelete }) {

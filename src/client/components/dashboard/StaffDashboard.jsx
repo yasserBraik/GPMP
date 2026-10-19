@@ -30,9 +30,11 @@ function heroMessage(isSupervisor, stats) {
     if (stats.submissionsToReview > 0) parts.push(`${plural(stats.submissionsToReview, 'submission')} to review`);
     if (stats.pendingProposals > 0) parts.push(`${plural(stats.pendingProposals, 'proposal')} waiting for your decision`);
     if (stats.upcomingMeetings > 0) parts.push(`${plural(stats.upcomingMeetings, 'meeting')} this week`);
+    if (stats.unreadMessages > 0) parts.push(`${plural(stats.unreadMessages, 'unread message')}`);
   } else {
     if (stats.pendingProposals > 0) parts.push(`${plural(stats.pendingProposals, 'proposal')} waiting for your review`);
     if (stats.upcomingPresentations > 0) parts.push(plural(stats.upcomingPresentations, 'upcoming presentation'));
+    if (stats.unreadMessages > 0) parts.push(`${plural(stats.unreadMessages, 'unread message')}`);
   }
   return parts.length > 0 ? `You have ${joinWithAnd(parts)}.` : 'Everything is up to date. Have a great day!';
 }

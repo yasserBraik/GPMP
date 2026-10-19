@@ -16,7 +16,13 @@ export default function ChannelList({ channels, selectedKey, onSelect, userId })
 
   const text = search.trim().toLowerCase();
   const visible = text
-    ? channels.filter((c) => c.label.toLowerCase().includes(text) || c.lastMessage?.text.toLowerCase().includes(text))
+    ? channels.filter(
+        (c) =>
+          c.label?.toLowerCase().includes(text) ||
+          c.groupName?.toLowerCase().includes(text) ||
+          c.lastMessage?.text?.toLowerCase().includes(text) ||
+          c.members?.some((m) => m.name?.toLowerCase().includes(text))
+      )
     : channels;
 
   // Keep the backend order (by team name) and put the channels of one team together

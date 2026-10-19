@@ -32,10 +32,11 @@ export default function AnnouncementsPage() {
 
   const announcements = data || [];
 
-  // A new announcement for this user arrived live: refresh the list quietly
+  // A new, updated or deleted announcement arrived: refresh the list quietly
   useSocketEvent('notification:new', (notification) => {
     if (notification.type === 'Announcement') reload();
   });
+  useSocketEvent('announcement:changed', () => reload());
 
   // ----- Filtering (on this page, the list is small) -----
   const audiences = sortAudiences([...new Set(announcements.map(audienceLabel))]);

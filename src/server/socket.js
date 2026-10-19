@@ -96,6 +96,15 @@ export function emitToRoom(room, event, data) {
   }
 }
 
+// Sends an event to all connected clients. Never throws.
+export function emitToAll(event, data) {
+  try {
+    if (io) io.emit(event, data);
+  } catch (err) {
+    console.error('[socket] emitToAll failed:', err.message);
+  }
+}
+
 /**
  * Closes the open connections of a user, e.g. after their password was changed or reset,
  * so a stolen login token cannot keep receiving live messages. Never throws.
@@ -130,7 +139,8 @@ export async function refreshUserRooms(userId) {
 
     for (const socket of sockets) {
       // Leave the old chat rooms, then join the current ones
-      for (const room of socket.rooms) {
+      const currentRooms = Array.isArray(socket.rooms) ? [...socket.rooms] : [...(socket.rooms || [])];
+      for (const room of currentRooms) {
         if (room.startsWith('group:') || room.startsWith('staff:')) socket.leave(room);
       }
       if (user) {

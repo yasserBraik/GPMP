@@ -62,6 +62,11 @@ export default function NotificationBell() {
     loadCount();
   }, [loadCount]);
 
+  // Keep browser tab title updated with unread count so users see notifications when tab is in background
+  useEffect(() => {
+    document.title = count > 0 ? `(${count}) GPMP` : 'GPMP — Graduation Project Management Platform';
+  }, [count]);
+
   // ----- Live updates -----
   useSocketEvent('notification:new', (notification) => {
     setCount((value) => value + 1);
@@ -72,6 +77,7 @@ export default function NotificationBell() {
 
   useSocketEvent('notification:updated', (notification) => {
     setItems((list) => putOnTop(list, notification, DROPDOWN_SIZE));
+    if (!isCurrentPage(notification.link, location)) toast.info(notification.title);
   });
 
   useSocketEvent('notification:sync', ({ unreadCount }) => {

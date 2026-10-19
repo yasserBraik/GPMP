@@ -45,7 +45,7 @@ export function chatListTime(value) {
   const daysAgo = Math.floor((Date.now() - date.getTime()) / 86400000);
   if (isSameDay(date, new Date())) return formatTime(date);
   if (dayLabel(date) === 'Yesterday') return 'Yesterday';
-  if (daysAgo < 7) return date.toLocaleDateString('en-US', { weekday: 'short' });
+  if (daysAgo >= 0 && daysAgo < 7) return date.toLocaleDateString('en-US', { weekday: 'short' });
   return formatDate(date);
 }
 

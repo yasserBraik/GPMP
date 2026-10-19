@@ -13,6 +13,8 @@ import { HttpError } from '../utils/HttpError.js';
 import { requireFields, isBlank, oneOf, toInt, toOptionalInt, checkMaxLength } from '../utils/validate.js';
 import { getAccessibleGroupIds, getGroupUserIds, isGroupSupervisor } from '../services/access.js';
 import { notify } from '../services/notify.js';
+import { emitToAll } from '../socket.js';
+import { emitNotificationSync } from './notifications.controller.js';
 
 const TARGET_ROLES = ['All', 'Student', 'Supervisor', 'Examiner'];
 const MAX_CONTENT_LENGTH = 10000;
@@ -202,14 +204,38 @@ export async function updateAnnouncement(req, res) {
     [values.title, values.content, values.targetRole, values.groupId, now, id]
   );
 
-  res.json(await loadAnnouncement(id, req.user));
+  const loaded = await loadAnnouncement(id, req.user);
+  emitToAll('announcement:changed', { id, action: 'updated' });
+  res.json(loaded);
 }
 
 // DELETE /api/announcements/:id -> { message }
 export async function deleteAnnouncement(req, res) {
   const id = toInt(req.params.id, 'Announcement id');
-  await findManageableAnnouncement(req.user, id);
+  const existing = await findManageableAnnouncement(req.user, id);
 
   await query('DELETE FROM announcement WHERE AnnouncementID = ?', [id]);
+  emitToAll('announcement:changed', { id, action: 'deleted' });
+
+  // Clean up any unread notification for this deleted announcement
+  try {
+    const deletedNotes = await query(
+      `SELECT DISTINCT UserID FROM notification
+        WHERE Type = 'Announcement' AND IsRead = 0 AND Title = ?`,
+      [`New announcement: ${existing.AnnouncementTitle}`]
+    );
+    if (deletedNotes.length > 0) {
+      await query(
+        `DELETE FROM notification WHERE Type = 'Announcement' AND IsRead = 0 AND Title = ?`,
+        [`New announcement: ${existing.AnnouncementTitle}`]
+      );
+      for (const row of deletedNotes) {
+        await emitNotificationSync(row.UserID);
+      }
+    }
+  } catch (syncErr) {
+    console.error('[announcements] Notification cleanup failed:', syncErr.message);
+  }
+
   res.json({ message: 'Announcement deleted' });
 }
