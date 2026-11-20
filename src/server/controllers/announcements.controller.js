@@ -13,7 +13,7 @@ import { HttpError } from '../utils/HttpError.js';
 import { requireFields, isBlank, oneOf, toInt, toOptionalInt, checkMaxLength } from '../utils/validate.js';
 import { getAccessibleGroupIds, getGroupUserIds, isGroupSupervisor } from '../services/access.js';
 import { notify } from '../services/notify.js';
-import { emitToAll } from '../socket.js';
+import { emitToUser } from '../socket.js';
 import { emitNotificationSync } from './notifications.controller.js';
 
 const TARGET_ROLES = ['All', 'Student', 'Supervisor', 'Examiner'];
@@ -125,6 +125,22 @@ async function getRecipientIds({ targetRole, groupId }) {
   return rows.map((row) => row.UserID);
 }
 
+// The page link stored in an announcement's notifications (same page, so no extra toast there)
+function announcementLink(id) {
+  return `/announcements#announcement-${id}`;
+}
+
+// Live "the list changed" event, sent only to the people who can see the announcement
+async function emitAnnouncementChanged(audience, id, action, publisherId) {
+  try {
+    const ids = new Set(await getRecipientIds(audience));
+    if (publisherId) ids.add(publisherId);
+    for (const userId of ids) emitToUser(userId, 'announcement:changed', { id, action });
+  } catch (err) {
+    console.error('[announcements] Live update failed:', err.message);
+  }
+}
+
 // Loads an announcement the user may edit/delete, or throws 404 / 403
 async function findManageableAnnouncement(user, id) {
   const rows = await query(
@@ -182,7 +198,8 @@ export async function createAnnouncement(req, res) {
     type: 'Announcement',
     title: `New announcement: ${values.title}`,
     message: values.content,
-    link: '/announcements',
+    // The hash identifies this announcement, so its notifications can be cleaned up on delete
+    link: announcementLink(result.insertId),
     email: true,
   });
 
@@ -205,7 +222,9 @@ export async function updateAnnouncement(req, res) {
   );
 
   const loaded = await loadAnnouncement(id, req.user);
-  emitToAll('announcement:changed', { id, action: 'updated' });
+  // Both the old and the new audience may need to refresh their list
+  await emitAnnouncementChanged({ targetRole: existing.TargetRole, groupId: existing.GroupID }, id, 'updated', req.user.id);
+  await emitAnnouncementChanged(values, id, 'updated');
   res.json(loaded);
 }
 
@@ -215,26 +234,23 @@ export async function deleteAnnouncement(req, res) {
   const existing = await findManageableAnnouncement(req.user, id);
 
   await query('DELETE FROM announcement WHERE AnnouncementID = ?', [id]);
-  emitToAll('announcement:changed', { id, action: 'deleted' });
+  await emitAnnouncementChanged({ targetRole: existing.TargetRole, groupId: existing.GroupID }, id, 'deleted', req.user.id);
 
-  // Clean up any unread notification for this deleted announcement
+  // Remove the unread notifications of this announcement (matched by its link, so another
+  // announcement with the same title is never touched)
   try {
-    const deletedNotes = await query(
-      `SELECT DISTINCT UserID FROM notification
-        WHERE Type = 'Announcement' AND IsRead = 0 AND Title = ?`,
-      [`New announcement: ${existing.AnnouncementTitle}`]
+    const affected = await query(
+      `SELECT DISTINCT UserID FROM notification WHERE Type = 'Announcement' AND IsRead = 0 AND Link = ?`,
+      [announcementLink(id)]
     );
-    if (deletedNotes.length > 0) {
-      await query(
-        `DELETE FROM notification WHERE Type = 'Announcement' AND IsRead = 0 AND Title = ?`,
-        [`New announcement: ${existing.AnnouncementTitle}`]
-      );
-      for (const row of deletedNotes) {
-        await emitNotificationSync(row.UserID);
-      }
+    if (affected.length > 0) {
+      await query(`DELETE FROM notification WHERE Type = 'Announcement' AND IsRead = 0 AND Link = ?`, [
+        announcementLink(id),
+      ]);
+      for (const row of affected) await emitNotificationSync(row.UserID);
     }
-  } catch (syncErr) {
-    console.error('[announcements] Notification cleanup failed:', syncErr.message);
+  } catch (err) {
+    console.error('[announcements] Notification cleanup failed:', err.message);
   }
 
   res.json({ message: 'Announcement deleted' });

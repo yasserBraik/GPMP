@@ -95,7 +95,7 @@ async function findFeedback(feedbackId) {
 }
 
 // The submission being reviewed, with its task (404 if it does not exist)
-async function findSubmission(submissionId) {
+export async function findSubmission(submissionId) {
   const rows = await query(
     `SELECT s.SubmissionID AS id, s.TaskID AS taskId, s.GroupID AS groupId, t.Title AS taskTitle
        FROM submission s JOIN task t ON t.TaskID = s.TaskID
@@ -107,7 +107,7 @@ async function findSubmission(submissionId) {
 }
 
 // FR-11: only the group's supervisor (or an administrator) reviews submissions
-async function assertCanReview(user, groupId) {
+export async function assertCanReview(user, groupId) {
   await assertGroupAccess(user, groupId);
   if (user.role === 'Administrator') return;
   if (await isGroupSupervisor(user, groupId)) return;

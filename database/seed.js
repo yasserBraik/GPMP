@@ -8,7 +8,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
 import { UPLOAD_DIR } from '../src/server/utils/paths.js';
 import { makePdf, makeText, makeCsv } from './seed-files.js';
@@ -937,6 +937,51 @@ async function createResources(ctx) {
  * Inserts all demo data using the given mysql2 pool. Everything runs in one
  * transaction: if anything fails, nothing is saved.
  */
+// ---------------------------------------------------------------------
+// Project posters (public Posters page): Alpha and Legacy have one, Beta and Gamma not yet
+// ---------------------------------------------------------------------
+
+const DEMO_POSTER_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'demo-posters');
+
+async function createPosters(ctx) {
+  const posters = [
+    {
+      group: 'alpha', file: 'team-alpha.jpg', by: 's1', days: -3,
+      title: 'Smart Campus Navigation App',
+      summary:
+        'Find any room, lab or office on campus in a few taps: indoor and outdoor routes, a searchable room ' +
+        'directory and step-free paths. Tested with first-year students.',
+    },
+    {
+      group: 'legacy', file: 'team-legacy.jpg', by: 'alumni1', days: -420,
+      title: 'Library Seat Booking System',
+      summary:
+        'Book library seats and group rooms online, check in with a QR code and let no-show seats free up ' +
+        'automatically. Used by the library for a full semester.',
+    },
+  ];
+
+  for (const p of posters) {
+    const storedName = `seed-poster-${p.group}.jpg`;
+    const content = await fs.readFile(path.join(DEMO_POSTER_DIR, p.file));
+    await fs.writeFile(path.join(UPLOAD_DIR, storedName), content);
+    await insert(ctx.conn, 'poster', {
+      GroupID: ctx.groups[p.group],
+      Title: p.title,
+      Summary: p.summary,
+      FileName: p.file,
+      FilePath: storedName,
+      MimeType: 'image/jpeg',
+      FileSize: content.length,
+      ImageWidth: 1200,
+      ImageHeight: 1697,
+      UploadedByUserID: ctx.people[p.by].userId,
+      CreatedAt: at(p.days),
+      UpdatedAt: at(p.days),
+    });
+  }
+}
+
 export async function seed(pool) {
   // Hash the demo password once and reuse it for every account (hashing is slow on purpose)
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
@@ -958,6 +1003,7 @@ export async function seed(pool) {
     await createAnnouncements(ctx);
     await createNotifications(ctx);
     await createResources(ctx);
+    await createPosters(ctx);
 
     await conn.commit();
   } catch (err) {

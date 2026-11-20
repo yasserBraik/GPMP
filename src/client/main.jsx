@@ -10,6 +10,11 @@ import { BrowserRouter } from 'react-router-dom';
 
 // The shared styles are loaded FIRST, so each page's own stylesheet (styles/<page>.css)
 // comes later and wins when both set the same thing.
+// Fonts are bundled with the app (no request to Google), so they also work offline
+// and on campus networks that block external font servers
+import '@fontsource-variable/dm-sans/opsz.css';
+import '@fontsource/playfair-display/latin-600.css';
+import '@fontsource/playfair-display/latin-700.css';
 import './styles/global.css';
 import App from './App.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';

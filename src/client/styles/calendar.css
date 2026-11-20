@@ -134,7 +134,7 @@
 }
 .cal-day-today .cal-day-number,
 .cal-day-today .cal-day-number:hover {
-  background: var(--teal-500);
+  background: var(--teal-700);
   color: #fff;
 }
 
@@ -177,16 +177,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cal-chip-red { background: var(--color-danger-soft); color: var(--color-danger); }
+.cal-chip-red { background: var(--color-danger-soft); color: #b91c1c; }
 .cal-chip-blue { background: var(--color-info-soft); color: var(--color-info); }
 .cal-chip-purple { background: var(--color-purple-soft); color: var(--color-purple); }
-.cal-chip-green { background: var(--color-success-soft); color: var(--color-success); }
+.cal-chip-green { background: var(--color-success-soft); color: #166534; }
 .cal-chip-amber { background: var(--color-warning-soft); color: var(--color-warning); }
-.cal-chip-orange { background: var(--color-orange-soft); color: var(--color-orange); }
+.cal-chip-orange { background: var(--color-orange-soft); color: #9a3412; }
 .cal-chip-teal { background: var(--teal-50); color: var(--teal-600); }
-.cal-chip-gray { background: var(--gray-100); color: var(--gray-500); }
+.cal-chip-gray { background: var(--gray-100); color: var(--gray-600); }
 .cal-chip-done {
-  opacity: 0.55;
+  /* Done items look calmer through a neutral colour, not opacity (faded text failed WCAG contrast) */
+  background: var(--gray-100);
+  color: var(--gray-600);
 }
 .cal-chip-done .cal-chip-title {
   text-decoration: line-through;
@@ -362,7 +364,7 @@
 }
 .cal-date-tile-teal { background: var(--teal-50); color: var(--teal-700); }
 .cal-date-tile-blue { background: var(--color-info-soft); color: #1d4ed8; }
-.cal-date-tile-green { background: var(--color-success-soft); color: #15803d; }
+.cal-date-tile-green { background: var(--color-success-soft); color: #166534; }
 .cal-date-tile-amber { background: var(--color-warning-soft); color: #b45309; }
 .cal-date-tile-orange { background: var(--color-orange-soft); color: #c2410c; }
 .cal-date-tile-red { background: var(--color-danger-soft); color: #b91c1c; }

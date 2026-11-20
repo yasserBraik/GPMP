@@ -64,6 +64,21 @@ export async function requireAuth(req, res, next) {
 }
 
 /**
+ * For public pages: sets req.user when a valid token is sent, otherwise req.user = null.
+ * It never rejects the request, so visitors who are not signed in can still continue.
+ */
+export async function optionalAuth(req, res, next) {
+  req.user = null;
+  const token = getBearerToken(req);
+  const payload = token ? verifyToken(token) : null;
+  if (payload) {
+    const user = await loadUserContext(payload.id);
+    if (user && (payload.v ?? 0) === user.tokenVersion) req.user = user;
+  }
+  next();
+}
+
+/**
  * Only lets users with one of the given roles continue (otherwise 403).
  * Always use it after requireAuth, e.g.:
  *   router.post('/', requireAuth, requireRole('Supervisor', 'Administrator'), createTask);

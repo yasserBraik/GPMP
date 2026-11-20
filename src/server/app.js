@@ -39,6 +39,9 @@ import chatRoutes from './routes/chat.routes.js';
 import announcementsRoutes from './routes/announcements.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import resourcesRoutes from './routes/resources.routes.js';
+// Public posters wall and AI helpers
+import postersRoutes from './routes/posters.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 const app = express();
 
@@ -108,6 +111,9 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/announcements', announcementsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/resources', resourcesRoutes);
+
+app.use('/api/posters', postersRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Any other /api address is an unknown route -> JSON 404
 app.use('/api', notFound);

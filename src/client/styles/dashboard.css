@@ -188,6 +188,11 @@ a.dash-progress-row:hover {
 .dash-activity-text strong {
   color: var(--color-heading);
 }
+/* Links inside a sentence need more than colour to stand out (WCAG 1.4.1) */
+.dash-activity-text a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* ----- Announcements ----- */
 .dash-announcements {

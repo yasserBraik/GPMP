@@ -10,6 +10,7 @@ import AdminDashboard from '../components/dashboard/AdminDashboard.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSocketEvent } from '../context/SocketContext.jsx';
 import { useApi } from '../hooks/useApi.js';
+import { useDebouncedCallback } from '../hooks/useDebouncedCallback.js';
 import { getDashboard } from '../api/dashboard.js';
 import '../styles/dashboard.css';
 
@@ -17,11 +18,13 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { data, loading, error, reload } = useApi(getDashboard, [user.id]);
 
-  // Live updates: refresh the numbers and feeds quietly
-  useSocketEvent('notification:new', () => reload());
-  useSocketEvent('notification:updated', () => reload());
-  useSocketEvent('notification:sync', () => reload());
-  useSocketEvent('announcement:changed', () => reload());
+  // Live updates: refresh the numbers and feeds quietly. One chat message can fire several
+  // events at once, so they are batched into a single reload.
+  const softReload = useDebouncedCallback(reload, 400);
+  useSocketEvent('notification:new', softReload);
+  useSocketEvent('notification:updated', softReload);
+  useSocketEvent('notification:sync', softReload);
+  useSocketEvent('announcement:changed', softReload);
 
   if (loading) return <Loading text="Loading your dashboard..." />;
   if (error) return <ErrorMessage error={error} onRetry={reload} title="Could not load the dashboard" />;

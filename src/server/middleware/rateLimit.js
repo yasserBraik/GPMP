@@ -33,3 +33,18 @@ export const resetRequestLimiter = rateLimit({
     });
   },
 });
+
+// AI features cost money per request, so each signed-in user gets 40 AI requests per 15 minutes.
+// Runs after requireAuth, so the limit is per user (not per IP address).
+export const aiLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES,
+  limit: 40,
+  keyGenerator: (req) => `user:${req.user.id}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      error: { message: 'You have used the AI assistant a lot in a short time. Please wait a few minutes.' },
+    });
+  },
+});

@@ -18,6 +18,8 @@ import ErrorMessage from '../common/ErrorMessage.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 import ChatMessage from './ChatMessage.jsx';
 import MessageComposer from './MessageComposer.jsx';
+import ChatSummaryPanel from './ChatSummaryPanel.jsx';
+import { summarizeChat } from '../../api/ai.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useSocketEvent, useSocketStatus } from '../../context/SocketContext.jsx';
 import { getMessages, sendMessage, deleteMessage, markChannelRead, CHAT_PAGE_SIZE } from '../../api/chat.js';
@@ -38,6 +40,26 @@ export default function ChatConversation({ channel: info, user, onBack, onRead, 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [attempt, setAttempt] = useState(0); // increases on "Try again"
+
+  // "Catch me up": an AI summary of the unread (or recent) messages, made on request
+  const [summary, setSummary] = useState(null); // null = closed, else { loading, data, error }
+  // Opening a channel marks it as read, so remember how many messages were unread at that moment:
+  // those are the ones "Catch me up" should focus on
+  const unreadOnOpen = useRef(info.unreadCount || 0);
+  async function loadSummary() {
+    setSummary({ loading: true, data: null, error: null });
+    try {
+      setSummary({ loading: false, data: await summarizeChat(groupId, channel, unreadOnOpen.current), error: null });
+    } catch (err) {
+      setSummary({ loading: false, data: null, error: err });
+    }
+  }
+  // Switching to another channel closes the summary of the previous one
+  useEffect(() => {
+    setSummary(null);
+    unreadOnOpen.current = info.unreadCount || 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId, channel]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [newBelow, setNewBelow] = useState(0); // new messages while the user is scrolled up
@@ -247,6 +269,16 @@ export default function ChatConversation({ channel: info, user, onBack, onRead, 
             </span>
           </p>
         </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-small ai-button chat-catchup"
+          onClick={loadSummary}
+          disabled={summary?.loading || loading || messages.length === 0}
+          title="Summarise the unread messages"
+        >
+          <Icon name="sparkles" size={15} />
+          <span>Catch me up</span>
+        </button>
         <div
           className="avatar-stack chat-conv-members"
           role="group"
@@ -257,6 +289,8 @@ export default function ChatConversation({ channel: info, user, onBack, onRead, 
           ))}
         </div>
       </header>
+
+      {summary && <ChatSummaryPanel state={summary} onClose={() => setSummary(null)} onRetry={loadSummary} />}
 
       <div className="chat-messages" ref={listRef} onScroll={handleScroll} role="log" aria-label="Messages">
         {loading ? (

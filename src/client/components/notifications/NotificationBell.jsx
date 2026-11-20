@@ -77,7 +77,8 @@ export default function NotificationBell() {
 
   useSocketEvent('notification:updated', (notification) => {
     setItems((list) => putOnTop(list, notification, DROPDOWN_SIZE));
-    if (!isCurrentPage(notification.link, location)) toast.info(notification.title);
+    // Silent updates are corrections (e.g. a deleted message lowered the count): no pop-up
+    if (!notification.silent && !isCurrentPage(notification.link, location)) toast.info(notification.title);
   });
 
   useSocketEvent('notification:sync', ({ unreadCount }) => {

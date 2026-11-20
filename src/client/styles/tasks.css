@@ -267,7 +267,7 @@
   display: inline-flex;
 }
 .task-card-unassigned {
-  color: var(--gray-400);
+  color: var(--color-muted);
   font-size: 0.75rem;
 }
 .task-card-info {
@@ -569,4 +569,25 @@
   .task-feedback-sections,
   .task-decision { grid-template-columns: minmax(0, 1fr); }
   .task-submission { padding: 0.85rem; }
+}
+
+/* "Draft with AI" row at the top of the feedback form */
+.task-feedback-ai {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed #c4b5fd;
+  border-radius: var(--radius);
+  background: var(--color-purple-soft);
+}
+.task-feedback-ai .ai-note {
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+}
+.task-feedback-ai .muted {
+  flex: 1;
+  min-width: 200px;
 }

@@ -40,6 +40,13 @@ Socket.IO) and **MySQL/MariaDB** (XAMPP).
   notifications (in the app and by email).
 - **Archive and showcase** - finished projects are archived (read-only) and shown in a projects
   showcase with a description and a video.
+- **Project posters (public)** - every group posts one poster of its project on a public wall that
+  anyone can browse at `/posters`, even without signing in. Students post or replace it, the group's
+  supervisor and administrators can remove it.
+- **AI assistance (optional)** - "Catch me up" summarises unread chat messages (gist, decisions, action
+  items, open questions), "Draft with AI" writes a first draft of a supervisor's feedback on a
+  submission, and "Write with AI" drafts the public description of a poster. Nothing is saved or sent
+  without a person reviewing it. Works without an AI key too, using simpler built-in rules.
 - **Dashboards and resources** - a start page for every role and a page of tutorials and tools.
 - **Responsive** - every page works from phone width to desktop.
 
@@ -219,6 +226,32 @@ announcements and proposal decisions) are **not sent**; they are printed in the 
 the reset link directly (never on another device of the network, never in production, and never once
 real emails are sent). To send real emails, fill in the `SMTP_*` settings in `.env`.
 
+### AI features (optional)
+
+The AI features use the Claude API. Without a key they still work in a simple **built-in** mode
+(rule-based summaries and templates), and the interface says so under every suggestion.
+
+To turn the real AI on, create a key at <https://platform.claude.com>, then set in `.env`:
+
+```
+ANTHROPIC_API_KEY=your-key-here
+AI_MODEL=claude-haiku-5-5
+```
+
+Restart GPMP after changing `.env`. The key stays on the server (it never reaches the browser), every AI
+request uses the same access rules as the rest of the app (a student can only summarise their own
+group's chat, only the group's supervisor can draft its feedback), and each user can make 40 AI
+requests per 15 minutes. Ask the university before sending real student work to an outside AI service.
+
+### Updating an existing installation
+
+New tables are added to `database/schema.sql`. `npm run db:setup` creates them but also **deletes all
+data**. To keep your data, run only the new migration instead (MySQL must be running):
+
+```bash
+/c/xampp/mysql/bin/mysql.exe -u root gpmp < database/migrations/001_add_posters.sql
+```
+
 ### Useful commands
 
 | Command | What it does |
@@ -276,15 +309,16 @@ All dates in the demo data are relative to the day you run `npm run db:setup`, s
 
 ## 6. Running the smoke test
 
-`scripts/smoke-test.js` checks the whole API from start to end (about 210 checks): signing in
+`scripts/smoke-test.js` checks the whole API from start to end (about 240 checks): signing in
 with every role, access rules, a temporary group, the complete Team Gamma story (choose a supervisor →
 create the project → submit the proposal → supervisor approves → admin assigns an examiner → examiner
 approves → project In Progress), who may edit proposal feedback, deactivated supervisors, tasks with a
 file submission, a resubmission and feedback, documents (versions, empty files), calendar events (conflicts,
 meetings that already started), the read-only archived project, attendance, live chat over Socket.IO,
 announcements visible to the right people, notifications, resources, profile, showcase, all four
-dashboards, forgot/reset password (the old session ends), account lock, change password and
-deactivation. Each check prints `PASS` or `FAIL`, followed by a summary.
+dashboards, the public posters wall (fake or too-small images are refused, only the right people may
+remove a poster), the AI helpers and their access rules, unread counts after deleting chat messages,
+forgot/reset password (the old session ends), account lock, change password and deactivation. Each check prints `PASS` or `FAIL`, followed by a summary.
 
 With GPMP running (`npm run dev` in one terminal), open a second terminal in the `GPMP` folder:
 
@@ -364,6 +398,7 @@ marks every addition with the comment `-- added` and the requirement it supports
 | `attendance` | One row per student per meeting or presentation (FR-15, UC14) |
 | `notification` | In-app notifications with a link to the related page (FR-20) |
 | `resource` | Tutorials, tools, frameworks, libraries and guides (FR-17) |
+| `poster` | One public poster image per group for the Posters page, with title, short description and image size |
 
 **Added or changed columns**
 
