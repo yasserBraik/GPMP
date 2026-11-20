@@ -2,9 +2,53 @@
 // pitch and two main options: "Sign in" (or "Go to dashboard" when already signed in) and
 // "Learn more", which scrolls down to the features.
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { getPosters } from '../api/posters.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/common/Icon.jsx';
 import '../styles/auth.css';
+import '../styles/posters.css';
+import { asset } from '../config/demo.js';
+
+// "Latest posters": up to 4 posters from the public wall (the section hides when there are none)
+function LatestPosters() {
+  const [posters, setPosters] = useState([]);
+  useEffect(() => {
+    let active = true;
+    getPosters()
+      .then((data) => active && setPosters(data.posters.slice(0, 4)))
+      .catch(() => {}); // the home page works fine without this section
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (posters.length === 0) return null;
+  return (
+    <section id="posters" className="auth-section" aria-labelledby="posters-title">
+      <div className="auth-container">
+        <div className="auth-section-head">
+          <p className="auth-eyebrow">Project posters</p>
+          <h2 id="posters-title">See what our teams are building</h2>
+          <p>Every graduation project team can post its poster. The wall is open to everyone.</p>
+        </div>
+        <div className="posters-preview">
+          {posters.map((poster) => (
+            <Link key={poster.id} to="/posters" className="posters-preview-item">
+              <img src={poster.imageUrl} alt="" loading="lazy" />
+              <span>{poster.title}</span>
+            </Link>
+          ))}
+        </div>
+        <p className="posters-preview-more">
+          <Link to="/posters" className="btn btn-secondary">
+            Browse all posters <Icon name="arrowRight" size={16} />
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
 
 // Who uses GPMP (shown under the hero)
 const ROLES = [
@@ -57,6 +101,18 @@ const FEATURES = [
     color: 'navy',
     title: 'Projects showcase',
     text: 'Explore archived projects and showcase videos from previous years for inspiration.',
+  },
+  {
+    icon: 'image',
+    color: 'teal',
+    title: 'Public project posters',
+    text: 'Every team can post its project poster on a public wall that anyone can browse.',
+  },
+  {
+    icon: 'sparkles',
+    color: 'purple',
+    title: 'AI assistance',
+    text: 'Catch up on long chats in seconds and get first drafts of feedback and poster descriptions.',
   },
   {
     icon: 'lock',
@@ -121,7 +177,7 @@ export default function LandingPage() {
       <header className="auth-topbar">
         <div className="auth-container auth-topbar-inner">
           <Link to="/" className="auth-logo" aria-label="GPMP home page">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             <span>
               <strong>GPMP</strong>
               <small>Al-Yamamah University</small>
@@ -134,6 +190,9 @@ export default function LandingPage() {
             <button type="button" className="auth-topnav-link" onClick={() => scrollToSection('how-it-works')}>
               How it works
             </button>
+            <Link to="/posters" className="auth-topnav-link">
+              Posters
+            </Link>
             <Link to={user ? '/dashboard' : '/login'} className="btn btn-primary btn-small">
               {user ? 'My workspace' : 'Sign in'}
             </Link>
@@ -176,7 +235,7 @@ export default function LandingPage() {
             {/* Decorative preview of a project dashboard (hidden from screen readers) */}
             <div className="auth-preview" aria-hidden="true">
               <div className="auth-preview-head">
-                <img src="/logo.jpeg" alt="" />
+                <img src={asset('logo.jpeg')} alt="" />
                 <div>
                   <strong>Your Project Dashboard</strong>
                   <span>Student · Graduation Project 2</span>
@@ -268,6 +327,8 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <LatestPosters />
+
         <section className="auth-cta-band">
           <div className="auth-container">
             <h2>Ready to work on your graduation project?</h2>
@@ -280,7 +341,7 @@ export default function LandingPage() {
       <footer className="auth-landing-footer">
         <div className="auth-container auth-landing-footer-inner">
           <span className="auth-landing-footer-brand">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             GPMP — Graduation Project Management Platform
           </span>
           <span>Al-Yamamah University · {academicYear()}</span>

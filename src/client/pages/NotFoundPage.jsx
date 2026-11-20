@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/common/Icon.jsx';
+import { asset } from '../config/demo.js';
 
 export default function NotFoundPage() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export default function NotFoundPage() {
   return (
     <div className="public-page">
       <div className="public-card not-found">
-        <img src="/logo.jpeg" alt="GPMP logo" className="not-found-logo" />
+        <img src={asset('logo.jpeg')} alt="GPMP logo" className="not-found-logo" />
         <p className="not-found-code">404</p>
         <h1>Page not found</h1>
         <p className="muted">

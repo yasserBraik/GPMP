@@ -16,8 +16,9 @@
   --navy-800: #16294d;
   --navy-700: #1e3a6b;
   --navy-100: #e3e9f4;
+  --teal-800: #096b57;
   --teal-700: #0b7d66;
-  --teal-600: #0e9677;
+  --teal-600: #0a7a63; /* darkened from #0e9677 so teal text passes WCAG AA (4.5:1) */
   --teal-500: #12a383;
   --teal-400: #2ec4a0;
   --teal-300: #5eead4;
@@ -25,13 +26,14 @@
   --teal-50: #ecfbf6;
 
   /* Meaning */
-  --color-primary: var(--teal-500);
-  --color-primary-hover: var(--teal-600);
+  /* Buttons use the deeper teal so white text on them passes WCAG AA (5:1) */
+  --color-primary: var(--teal-700);
+  --color-primary-hover: var(--teal-800);
   --color-primary-soft: var(--teal-50);
   --color-navy: var(--navy-900);
-  --color-success: #16a34a;
+  --color-success: #15803d;
   --color-success-soft: #e3f6ea;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
   --color-warning-soft: #fef3dc;
   --color-danger: #dc2626;
   --color-danger-soft: #fde8e8;
@@ -58,11 +60,11 @@
   --color-surface: #ffffff;
   --color-text: #1e293b;
   --color-heading: var(--navy-900);
-  --color-muted: #64748b;
+  --color-muted: #5a6678;
   --color-border: #e6eaf0;
 
   /* Type */
-  --font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-sans: 'DM Sans Variable', 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
   /* Shape and depth */
@@ -445,6 +447,11 @@ input[type='radio'] {
 }
 
 /* Inline messages inside forms and pages */
+.alert a {
+  /* links inside a sentence need an underline, not only a colour (WCAG 1.4.1) */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .alert {
   display: flex;
   align-items: flex-start;
@@ -829,10 +836,10 @@ input[type='radio'] {
 }
 .badge-gray { background: var(--gray-100); color: var(--gray-600); }
 .badge-blue { background: var(--color-info-soft); color: #1d4ed8; }
-.badge-teal { background: #dcf7ef; color: var(--teal-700); }
-.badge-green { background: var(--color-success-soft); color: #15803d; }
+.badge-teal { background: #dcf7ef; color: var(--teal-800); }
+.badge-green { background: var(--color-success-soft); color: #166534; }
 .badge-amber { background: var(--color-warning-soft); color: #b45309; }
-.badge-orange { background: var(--color-orange-soft); color: #c2410c; }
+.badge-orange { background: var(--color-orange-soft); color: #9a3412; }
 .badge-red { background: var(--color-danger-soft); color: #b91c1c; }
 .badge-purple { background: var(--color-purple-soft); color: #6d28d9; }
 .badge-navy { background: var(--navy-100); color: var(--navy-700); }
@@ -1802,4 +1809,39 @@ input[type='radio'] {
 /* Very small phones: one stat card per row */
 @media (max-width: 340px) {
   .stats-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ----- AI helpers (shared) ----- */
+/* Buttons that ask the AI for a suggestion */
+.ai-button {
+  color: var(--color-purple);
+  font-weight: 600;
+}
+.ai-button:hover:not(:disabled) {
+  background: var(--color-purple-soft);
+  color: #5b21b6;
+}
+/* The note under AI-written text: says where it came from */
+.ai-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.ai-note .icon {
+  flex: none;
+  margin-top: 1px;
+}
+.ai-note-ai {
+  color: #5b21b6;
+}
+.ai-note-basic {
+  color: var(--color-muted);
+}
+.ai-note .link-button {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
 }

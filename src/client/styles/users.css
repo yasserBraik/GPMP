@@ -94,12 +94,17 @@
 }
 .btn.users-activate:hover {
   background: var(--color-success-soft);
-  color: #15803d;
+  color: #166534;
 }
 /* Inactive accounts look faded */
-.users-row-inactive .users-person,
-.users-row-inactive .users-details {
-  opacity: 0.6;
+.users-row-inactive td {
+  background: var(--gray-50);
+}
+
+/* Inactive rows are told apart by colour and background, not opacity: fading the whole row
+   made its text unreadable (it failed the WCAG contrast check). */
+.users-row-inactive .users-person strong {
+  color: var(--color-muted);
 }
 
 /* ----- Add / edit user modal ----- */

@@ -13,6 +13,9 @@ import LoginPage from './pages/LoginPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+// Public pages that signed-in users see inside the app frame
+import PublicOrAppLayout from './layouts/PublicOrAppLayout.jsx';
+import PostersPage from './pages/PostersPage.jsx';
 
 // Private pages
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -64,6 +67,10 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {/* Public project posters: open to everyone, with the sidebar for signed-in users */}
+      <Route element={<PublicOrAppLayout />}>
+        <Route path="/posters" element={<PostersPage />} />
+      </Route>
 
       {/* Private pages: only logged-in users, shown inside the main layout */}
       <Route

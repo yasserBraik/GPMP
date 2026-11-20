@@ -3,6 +3,7 @@
 //   uploadFile  -> one document in the form field "file"   (max 20 MB)
 //   uploadFiles -> up to 5 documents in the field "files"   (max 20 MB each)
 //   uploadVideo -> one video in the field "video"           (max 200 MB, mp4/webm/mov)
+//   uploadPoster -> one image in the field "poster"         (max 10 MB, png/jpg/webp)
 // After the middleware, the file details are in req.file (or req.files for uploadFiles).
 // Empty (0-byte) files are refused as damaged (UC5 exceptional flow).
 // Uploaded files are never public: they are downloaded only through checked endpoints.
@@ -16,6 +17,7 @@ import { UPLOAD_DIR } from '../utils/paths.js';
 const MB = 1024 * 1024;
 const DOCUMENT_MAX_MB = 20;
 const VIDEO_MAX_MB = 200;
+const POSTER_MAX_MB = 10;
 const MAX_FILES = 5;
 
 export const ALLOWED_DOCUMENT_EXTENSIONS = [
@@ -23,6 +25,7 @@ export const ALLOWED_DOCUMENT_EXTENSIONS = [
   '.zip', '.rar', '.png', '.jpg', '.jpeg', '.gif',
 ];
 export const ALLOWED_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov'];
+export const ALLOWED_POSTER_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
 
 // Saves files as "<timestamp>-<random>.<ext>" so names never clash or reveal anything
 const storage = multer.diskStorage({
@@ -98,6 +101,18 @@ const videoUploader = createUploader({
   allowed: ALLOWED_VIDEO_EXTENSIONS,
   typeMessage: 'This file type is not allowed. Please upload an MP4, WebM or MOV video.',
   maxMb: VIDEO_MAX_MB,
+});
+
+const posterUploader = createUploader({
+  allowed: ALLOWED_POSTER_EXTENSIONS,
+  typeMessage: 'Please upload the poster as a PNG, JPG or WebP image.',
+  maxMb: POSTER_MAX_MB,
+});
+
+export const uploadPoster = withFriendlyErrors(posterUploader.single('poster'), {
+  maxMb: POSTER_MAX_MB,
+  fieldName: 'poster',
+  maxCount: 1,
 });
 
 export const uploadFile = withFriendlyErrors(documentUploader.single('file'), {

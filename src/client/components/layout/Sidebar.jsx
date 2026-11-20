@@ -13,6 +13,7 @@ import { canUseChat, navFor } from '../../config/roles.js';
 import { getChatUnreadCount } from '../../api/chat.js';
 import Avatar from '../common/Avatar.jsx';
 import Icon from '../common/Icon.jsx';
+import { asset } from '../../config/demo.js';
 
 // Number of unread chat messages, kept up to date by the live (socket) events
 function useChatUnreadCount(enabled) {
@@ -57,7 +58,7 @@ export default function Sidebar({ open, onClose }) {
 
       <aside className={open ? 'sidebar open' : 'sidebar'} aria-label="Main menu">
         <div className="sidebar-brand">
-          <img src="/logo.jpeg" alt="GPMP logo" className="sidebar-logo" />
+          <img src={asset('logo.jpeg')} alt="GPMP logo" className="sidebar-logo" />
           <div className="sidebar-brand-text">
             <strong>GPMP</strong>
             <span>Al-Yamamah University</span>

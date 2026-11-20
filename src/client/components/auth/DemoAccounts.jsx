@@ -5,6 +5,7 @@
 // Props:
 //   onPick  function  called with the chosen email address
 import Icon from '../common/Icon.jsx';
+import { IS_DEMO, DEMO_PASSWORD_HINT } from '../../config/demo.js';
 import '../../styles/auth.css';
 
 const DEMO_ACCOUNTS = [
@@ -41,17 +42,24 @@ const DEMO_ACCOUNTS = [
 
 export default function DemoAccounts({ onPick }) {
   return (
-    <details className="auth-demo">
+    <details className="auth-demo" open={IS_DEMO}>
       <summary>
         <Icon name="info" size={16} />
         Demo accounts
-        <span className="auth-demo-tag">development only</span>
+        <span className="auth-demo-tag">{IS_DEMO ? 'online demo' : 'development only'}</span>
         <Icon name="chevronDown" size={16} className="auth-demo-chevron" />
       </summary>
 
       <div className="auth-demo-body">
         <p className="auth-demo-hint">
-          Click an email to fill it in. See the README for the demo password.
+          {IS_DEMO ? (
+            <>
+              Click an account to sign in with it. Every demo account uses the password{' '}
+              <code>{DEMO_PASSWORD_HINT}</code>.
+            </>
+          ) : (
+            'Click an email to fill it in. See the README for the demo password.'
+          )}
         </p>
         {DEMO_ACCOUNTS.map((section) => (
           <div key={section.role}>

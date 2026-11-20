@@ -18,6 +18,7 @@
 // uses socket.io-client from node_modules; it is skipped if that is not installed.
 
 import { createRequire } from 'node:module';
+import zlib from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 
 const API_URL = (process.env.API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
@@ -136,6 +137,7 @@ const DEMO_ACCOUNTS = {
   student1: 'student1@gpmp.edu',
   student2: 'student2@gpmp.edu',
   student4: 'student4@gpmp.edu',
+  student5: 'student5@gpmp.edu',
   student7: 'student7@gpmp.edu',
   student8: 'student8@gpmp.edu',
   alumni1: 'alumni1@gpmp.edu',
@@ -716,6 +718,141 @@ async function stepChat() {
   if (removed.status === 200) created.pop();
 }
 
+// A deleted message only lowers the unread count of people who had NOT read it yet
+async function stepChatDeleteKeepsUnread() {
+  const s1 = tokens.student1;
+  const s2 = tokens.student2;
+  const unreadOf = async (token) => (await get('/chat/unread-count', token)).data?.count ?? -1;
+  await patch('/chat/read', s2, { groupId: ALPHA, channel: 'Group' });
+
+  const old = await post('/chat/messages', s1, { groupId: ALPHA, channel: 'Group', text: `Old message ${TAG}` });
+  await patch('/chat/read', s2, { groupId: ALPHA, channel: 'Group' }); // student2 reads it
+  const fresh = await post('/chat/messages', s1, { groupId: ALPHA, channel: 'Group', text: `New message ${TAG}` });
+  check('student2 has 1 unread message', (await unreadOf(s2)) === 1);
+
+  await del(`/chat/messages/${old.data?.id}`, s1);
+  check('deleting an already-read message keeps the unread count', (await unreadOf(s2)) === 1, `count ${await unreadOf(s2)}`);
+
+  const another = await post('/chat/messages', s1, { groupId: ALPHA, channel: 'Group', text: `Second new ${TAG}` });
+  check('a second message makes it 2 unread', (await unreadOf(s2)) === 2);
+  await del(`/chat/messages/${another.data?.id}`, s1);
+  check('deleting an unread message lowers the count to 1', (await unreadOf(s2)) === 1, `count ${await unreadOf(s2)}`);
+
+  await del(`/chat/messages/${fresh.data?.id}`, s1);
+  check('deleting the last unread message clears it', (await unreadOf(s2)) === 0, `count ${await unreadOf(s2)}`);
+}
+
+// A small valid PNG (solid colour) of the given size, built in memory
+function pngImage(width, height) {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const byte of buf) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const sum = Buffer.alloc(4);
+    sum.writeUInt32BE(crc(body));
+    return Buffer.concat([length, body, sum]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8; // bit depth
+  header[9] = 2; // RGB
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(width * 3, 0x55)]);
+  const raw = Buffer.concat(Array.from({ length: height }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', zlib.deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+function posterForm({ title, summary = '', image, name = 'poster.png', type = 'image/png' }) {
+  const form = new FormData();
+  form.append('title', title);
+  form.append('summary', summary);
+  if (image) form.append('poster', new Blob([image], { type }), name);
+  return form;
+}
+
+// Public project posters
+async function stepPosters() {
+  const list = await get('/posters'); // no token: the wall is public
+  check('anyone can list the posters (no sign-in)', list.status === 200 && list.data?.posters?.length >= 2, `status ${list.status}`);
+  const alpha = list.data?.posters?.find((p) => p.groupId === ALPHA);
+  check('the demo poster of Team Alpha is listed with its team', Boolean(alpha) && alpha.members.length === 3);
+  check('signed-out visitors cannot delete', alpha?.canDelete === false);
+
+  const image = await fetch(`${API_URL}${alpha?.imageUrl?.replace(/^\/api/, '')}`);
+  check('anyone can open the poster image', image.status === 200 && image.headers.get('content-type') === 'image/jpeg', `status ${image.status}`);
+
+  const mine = await get('/posters/mine', tokens.student4);
+  check('student4 (Team Beta) has no poster yet', mine.status === 200 && mine.data?.canPost === true && mine.data?.poster === null);
+
+  const fake = await put('/posters/mine', tokens.student4, posterForm({ title: 'x', image: Buffer.from('<html>not an image</html>') }));
+  checkStatus('a file that is not really an image -> 400', fake, 400);
+  const tiny = await put('/posters/mine', tokens.student4, posterForm({ title: 'x', image: pngImage(50, 50) }));
+  checkStatus('a too small image -> 400', tiny, 400);
+  checkStatus('a poster without an image -> 400', await put('/posters/mine', tokens.student4, posterForm({ title: 'x' })), 400);
+  checkStatus('a supervisor cannot post a poster -> 403', await put('/posters/mine', tokens.supervisor1, posterForm({ title: 'x', image: pngImage(400, 560) })), 403);
+
+  const created = await put('/posters/mine', tokens.student4, posterForm({ title: `Beta poster ${TAG}`, summary: 'Leaf in, diagnosis out.', image: pngImage(400, 560) }));
+  check('student4 posts the Team Beta poster', created.status === 201 && created.data?.width === 400 && created.data?.height === 560, `status ${created.status}`);
+  const posterId = created.data?.id;
+  cleanup.push(async () => posterId && (await del(`/posters/${posterId}`, tokens.admin)));
+
+  const edited = await put('/posters/mine', tokens.student5, posterForm({ title: `Beta poster v2 ${TAG}` }));
+  check('a teammate updates the text without a new image', edited.status === 200 && edited.data?.id === posterId && edited.data?.title.endsWith(TAG));
+
+  const search = await get(`/posters?search=${encodeURIComponent(`v2 ${TAG}`)}`);
+  check('the public search finds the new poster', search.data?.posters?.length === 1 && search.data.posters[0].id === posterId);
+
+  checkStatus('a student of another group cannot remove it -> 403', await del(`/posters/${posterId}`, tokens.student1), 403);
+  checkStatus('another supervisor cannot remove it -> 403', await del(`/posters/${posterId}`, tokens.supervisor1), 403);
+  const asSupervisor = await get('/posters', tokens.supervisor2);
+  check("the group's supervisor may remove it", asSupervisor.data?.posters?.find((p) => p.id === posterId)?.canDelete === true);
+  checkStatus('the group removes its poster', await del(`/posters/${posterId}`, tokens.student4), 200);
+  check('the removed poster is gone from the wall', !(await get('/posters')).data?.posters?.some((p) => p.id === posterId));
+}
+
+// AI helpers (with or without an AI key: without one they answer with source 'basic')
+async function stepAi() {
+  const status = await get('/ai/status', tokens.student1);
+  check('the AI status is available', status.status === 200 && typeof status.data?.enabled === 'boolean');
+  checkStatus('AI needs a sign-in -> 401', await get('/ai/status'), 401);
+
+  const summary = await post('/ai/chat-summary', tokens.student1, { groupId: ALPHA, channel: 'Group', unread: 3 });
+  check('student1 gets a "Catch me up" summary', summary.status === 200 && typeof summary.data?.overview === 'string' && ['ai', 'basic'].includes(summary.data?.source), `status ${summary.status}`);
+  check('the summary focuses on the unread messages', summary.data?.unread === 3, `unread ${summary.data?.unread}`);
+  checkStatus('another group cannot summarise this chat -> 403', await post('/ai/chat-summary', tokens.student4, { groupId: ALPHA, channel: 'Group' }), 403);
+  checkStatus('a student cannot summarise the Staff channel -> 403', await post('/ai/chat-summary', tokens.student1, { groupId: ALPHA, channel: 'Staff' }), 403);
+
+  const submissions = await get(`/submissions?groupId=${ALPHA}`, tokens.supervisor1);
+  const submissionId = (submissions.data || [])[0]?.id;
+  if (!submissionId) {
+    skip('AI feedback draft', 'no Team Alpha submission found');
+  } else {
+    const draft = await post('/ai/feedback-draft', tokens.supervisor1, { submissionId });
+    check('supervisor1 gets a feedback draft', draft.status === 200 && typeof draft.data?.comments === 'string' && draft.data.comments.length > 0, `status ${draft.status}`);
+    checkStatus('a student cannot draft feedback -> 403', await post('/ai/feedback-draft', tokens.student1, { submissionId }), 403);
+    checkStatus("another group's supervisor cannot draft it -> 403", await post('/ai/feedback-draft', tokens.supervisor2, { submissionId }), 403);
+  }
+
+  const poster = await post('/ai/poster-summary', tokens.student1, {});
+  check('student1 gets a poster description', poster.status === 200 && poster.data?.summary?.length > 0 && poster.data.summary.length <= 400);
+  checkStatus('a student without a group cannot -> 400', await post('/ai/poster-summary', tokens.student7, {}), 400);
+}
+
 async function stepAnnouncements() {
   checkStatus('a student cannot post announcements -> 403', await post('/announcements', tokens.student1, { title: 'x', content: 'x' }), 403);
   const missing = await post('/announcements', tokens.admin, { title: '', content: 'x' });
@@ -900,6 +1037,9 @@ const steps = [
   ['Archived project is read-only (FR-8)', stepArchivedProject],
   ['Attendance (UC14)', stepAttendance],
   ['Chat (UC6, UC12)', stepChat],
+  ['Deleting a message keeps unread counts right', stepChatDeleteKeepsUnread],
+  ['Public project posters', stepPosters],
+  ['AI helpers', stepAi],
   ['Announcements (UC7)', stepAnnouncements],
   ['Notifications (FR-20)', stepNotifications],
   ['Resources (FR-17)', stepResources],

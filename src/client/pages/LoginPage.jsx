@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import AuthShell from '../components/auth/AuthShell.jsx';
 import PasswordInput from '../components/auth/PasswordInput.jsx';
 import DemoAccounts from '../components/auth/DemoAccounts.jsx';
+import { IS_DEMO, DEMO_PASSWORD_HINT } from '../config/demo.js';
 import FormField from '../components/common/FormField.jsx';
 import Loading from '../components/common/Loading.jsx';
 import Icon from '../components/common/Icon.jsx';
@@ -97,6 +98,7 @@ export default function LoginPage() {
   // Demo helper: fill in the email and move to the password box
   function pickDemoAccount(demoEmail) {
     setEmail(demoEmail);
+    if (IS_DEMO) setPassword(DEMO_PASSWORD_HINT); // the online demo fills in the public demo password too
     setErrors({});
     setServerError(null);
     passwordRef.current?.focus();
@@ -173,7 +175,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {import.meta.env.DEV && <DemoAccounts onPick={pickDemoAccount} />}
+      {(import.meta.env.DEV || IS_DEMO) && <DemoAccounts onPick={pickDemoAccount} />}
     </AuthShell>
   );
 }

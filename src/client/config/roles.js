@@ -39,6 +39,7 @@ export const NAV = [
       { to: '/attendance', label: 'Attendance', icon: 'attendance', roles: [STUDENT, SUPERVISOR, ADMIN] },
       { to: '/resources', label: 'Resources', icon: 'book', roles: ALL_ROLES },
       { to: '/showcase', label: 'Projects Showcase', icon: 'trophy', roles: ALL_ROLES },
+      { to: '/posters', label: 'Project Posters', icon: 'image', roles: ALL_ROLES },
     ],
   },
   {

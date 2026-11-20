@@ -42,6 +42,14 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   },
 
+  // AI features (Claude API). Empty key = the AI features use their simple built-in version.
+  ai: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.AI_MODEL || 'claude-haiku-5-5',
+    // Only change this to send AI requests through a company proxy or gateway
+    baseUrl: process.env.AI_BASE_URL || 'https://api.anthropic.com',
+  },
+
   smtp: {
     host: process.env.SMTP_HOST || '', // empty = print emails to the console instead of sending
     port: toNumber(process.env.SMTP_PORT, 587),

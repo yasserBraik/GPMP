@@ -9,7 +9,7 @@
 -- =====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS resource, notification, announcement, chat_message,
+DROP TABLE IF EXISTS poster, resource, notification, announcement, chat_message,
   attendance, important_date, calendar, feedback, `file`, submission, task,
   proposal, graduation_project, student, project_group, examiner, supervisor,
   admin, `user`;
@@ -315,4 +315,24 @@ CREATE TABLE resource (
   CreatedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_resource_user FOREIGN KEY (CreatedByUserID) REFERENCES `user`(UserID) ON DELETE SET NULL,
   CONSTRAINT chk_resource_category CHECK (Category IN ('Tutorial', 'Tool', 'Framework', 'Library', 'Guide'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- added table: project posters wall. One poster image per group, shown on the public
+-- Posters page (visible to everyone, even without signing in).
+CREATE TABLE poster (
+  PosterID         INT AUTO_INCREMENT PRIMARY KEY,
+  GroupID          INT NOT NULL UNIQUE,           -- one poster per group (a new upload replaces it)
+  Title            VARCHAR(200) NOT NULL,
+  Summary          TEXT NULL,                     -- short description shown under the poster
+  FileName         VARCHAR(255) NOT NULL,         -- original file name
+  FilePath         VARCHAR(500) NOT NULL,         -- stored file name inside uploads/
+  MimeType         VARCHAR(100) NOT NULL,
+  FileSize         INT NOT NULL,
+  ImageWidth       INT NULL,
+  ImageHeight      INT NULL,
+  UploadedByUserID INT NULL,
+  CreatedAt        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UpdatedAt        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_poster_group FOREIGN KEY (GroupID)          REFERENCES project_group(GroupID) ON DELETE CASCADE,
+  CONSTRAINT fk_poster_user  FOREIGN KEY (UploadedByUserID) REFERENCES `user`(UserID) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

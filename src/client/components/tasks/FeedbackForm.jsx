@@ -11,7 +11,9 @@ import { useId, useState } from 'react';
 import FormField from '../common/FormField.jsx';
 import Icon from '../common/Icon.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import AiNote from '../common/AiNote.jsx';
 import { createFeedback, updateFeedback } from '../../api/feedback.js';
+import { draftFeedback } from '../../api/ai.js';
 
 const DECISIONS = [
   { value: 'Approved', icon: 'check', hint: 'The task will be marked as completed.', className: 'task-decision-approved' },
@@ -28,6 +30,38 @@ export default function FeedbackForm({ submissionId, feedback, onSaved, onCancel
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  const [draftInfo, setDraftInfo] = useState(null); // { source, filesRead, filesTotal } of the last AI draft
+
+  // Puts back what the supervisor had before the draft
+  function undoDraft() {
+    const { before } = draftInfo;
+    setDecision(before.decision);
+    setStrengths(before.strengths);
+    setImprovements(before.improvements);
+    setComments(before.comments);
+    setDraftInfo(null);
+  }
+
+  // Fills the form with a first draft. Nothing is sent until the supervisor presses Send.
+  async function handleDraft() {
+    const before = { decision, strengths, improvements, comments }; // kept for "Undo"
+    setDrafting(true);
+    setFormError('');
+    try {
+      const draft = await draftFeedback(submissionId);
+      if (draft.decision) setDecision(draft.decision);
+      setStrengths(draft.strengths || '');
+      setImprovements(draft.improvements || '');
+      setComments(draft.comments || '');
+      setErrors({});
+      setDraftInfo({ source: draft.source, filesRead: draft.filesRead, filesTotal: draft.filesTotal, decision: draft.decision, before });
+    } catch (err) {
+      setFormError(err.message);
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -56,6 +90,25 @@ export default function FeedbackForm({ submissionId, feedback, onSaved, onCancel
   return (
     <form className="form task-feedback-form" onSubmit={handleSubmit} noValidate>
       {formError && <div className="alert alert-error">{formError}</div>}
+
+      <div className="task-feedback-ai">
+        <button type="button" className="btn btn-secondary btn-small ai-button" onClick={handleDraft} disabled={drafting || saving}>
+          <Icon name="sparkles" size={15} />
+          {drafting ? 'Reading the submission…' : 'Draft with AI'}
+        </button>
+        {draftInfo ? (
+          <AiNote source={draftInfo.source}>
+            {draftInfo.filesTotal > 0 &&
+              `It could read ${draftInfo.filesRead} of ${draftInfo.filesTotal} attached file${draftInfo.filesTotal === 1 ? '' : 's'}.`}
+            {!draftInfo.decision && ' Choose the decision yourself.'}{' '}
+            <button type="button" className="link-button" onClick={undoDraft}>
+              Undo
+            </button>
+          </AiNote>
+        ) : (
+          <span className="muted small">Get a first draft from the task, the submission and earlier feedback.</span>
+        )}
+      </div>
 
       <fieldset className="task-fieldset">
         <legend>
