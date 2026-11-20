@@ -8,7 +8,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const backendUrl = env.VITE_BACKEND_URL || 'http://localhost:5000';
 
+  // "npm run build:demo" builds the online demo (runs in the browser on sample data) for a
+  // sub-folder such as GitHub Pages: https://<user>.github.io/GPMP/
+  const isDemo = mode === 'demo';
+
   return {
+    base: isDemo ? env.DEMO_BASE || '/GPMP/' : '/',
+
     // Lets Vite understand React (JSX) code
     plugins: [react()],
 
@@ -34,6 +40,7 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
+      outDir: isDemo ? 'dist-demo' : 'dist',
       rollupOptions: {
         output: {
           // Put the libraries (React, the router, Socket.IO) in their own file. They rarely

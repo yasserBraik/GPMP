@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/common/Icon.jsx';
 import '../styles/auth.css';
 import '../styles/posters.css';
+import { asset } from '../config/demo.js';
 
 // "Latest posters": up to 4 posters from the public wall (the section hides when there are none)
 function LatestPosters() {
@@ -176,7 +177,7 @@ export default function LandingPage() {
       <header className="auth-topbar">
         <div className="auth-container auth-topbar-inner">
           <Link to="/" className="auth-logo" aria-label="GPMP home page">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             <span>
               <strong>GPMP</strong>
               <small>Al-Yamamah University</small>
@@ -234,7 +235,7 @@ export default function LandingPage() {
             {/* Decorative preview of a project dashboard (hidden from screen readers) */}
             <div className="auth-preview" aria-hidden="true">
               <div className="auth-preview-head">
-                <img src="/logo.jpeg" alt="" />
+                <img src={asset('logo.jpeg')} alt="" />
                 <div>
                   <strong>Your Project Dashboard</strong>
                   <span>Student · Graduation Project 2</span>
@@ -340,7 +341,7 @@ export default function LandingPage() {
       <footer className="auth-landing-footer">
         <div className="auth-container auth-landing-footer-inner">
           <span className="auth-landing-footer-brand">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             GPMP — Graduation Project Management Platform
           </span>
           <span>Al-Yamamah University · {academicYear()}</span>

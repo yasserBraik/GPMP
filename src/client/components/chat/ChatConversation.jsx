@@ -19,6 +19,7 @@ import EmptyState from '../common/EmptyState.jsx';
 import ChatMessage from './ChatMessage.jsx';
 import MessageComposer from './MessageComposer.jsx';
 import ChatSummaryPanel from './ChatSummaryPanel.jsx';
+import { IS_DEMO } from '../../config/demo.js';
 import { summarizeChat } from '../../api/ai.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useSocketEvent, useSocketStatus } from '../../context/SocketContext.jsx';
@@ -264,8 +265,8 @@ export default function ChatConversation({ channel: info, user, onBack, onRead, 
             <span>{channelTitle(channel)}</span>
             <span aria-hidden="true">·</span>
             <span>{plural(members.length, 'member')}</span>
-            <span className={connected ? 'chat-status chat-status-live' : 'chat-status chat-status-offline'}>
-              {connected ? 'Live' : 'Reconnecting...'}
+            <span className={connected || IS_DEMO ? 'chat-status chat-status-live' : 'chat-status chat-status-offline'}>
+              {IS_DEMO ? 'Demo' : connected ? 'Live' : 'Reconnecting...'}
             </span>
           </p>
         </div>

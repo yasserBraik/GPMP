@@ -1,0 +1,44 @@
+/* The "Demo · sample data" label of the online demo (bottom-left corner) */
+.demo-badge {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: min(320px, calc(100vw - 24px));
+}
+.demo-badge-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-full);
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.demo-badge-panel {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius);
+  background: #fffbeb;
+  color: #78350f;
+  font-size: 0.82rem;
+  box-shadow: var(--shadow-lg);
+}
+.demo-badge-panel p {
+  margin: 0.3rem 0 0;
+}
+/* On wide screens, keep clear of the sidebar's last links */
+@media (min-width: 1025px) {
+  .demo-badge {
+    left: calc(var(--sidebar-width) + 16px);
+  }
+}

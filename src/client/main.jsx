@@ -20,17 +20,35 @@ import App from './App.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
+import { IS_DEMO, BASE_URL } from './config/demo.js';
+import DemoBadge from './demo/DemoBadge.jsx';
 
-createRoot(document.getElementById('root')).render(
+// "/GPMP/" -> "/GPMP" (the router wants the folder without the last slash; "/" stays undefined)
+const basename = BASE_URL.replace(/\/$/, '') || undefined;
+
+function start() {
+  createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <ToastProvider>
         <AuthProvider>
           <SocketProvider>
             <App />
+            {IS_DEMO && <DemoBadge />}
           </SocketProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
   </StrictMode>
-);
+  );
+}
+
+// Demo mode answers /api requests in the browser (no server needed); see demo/mockApi.js
+if (IS_DEMO) {
+  import('./demo/mockApi.js').then(({ installMockApi }) => {
+    installMockApi();
+    start();
+  });
+} else {
+  start();
+}

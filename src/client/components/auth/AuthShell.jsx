@@ -10,6 +10,7 @@
 import { Link } from 'react-router-dom';
 import Icon from '../common/Icon.jsx';
 import '../../styles/auth.css';
+import { asset } from '../../config/demo.js';
 
 const HIGHLIGHTS = [
   { icon: 'chat', text: 'Chat with your team and supervisor' },
@@ -22,7 +23,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
     <div className="auth-shell">
       <aside className="auth-brand">
         <Link to="/" className="auth-logo" aria-label="GPMP home page">
-          <img src="/logo.jpeg" alt="" />
+          <img src={asset('logo.jpeg')} alt="" />
           <span>
             <strong>GPMP</strong>
             <small>Al-Yamamah University</small>

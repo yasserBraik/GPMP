@@ -7,6 +7,7 @@ import MainLayout from './MainLayout.jsx';
 import Loading from '../components/common/Loading.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/auth.css';
+import { asset } from '../config/demo.js';
 
 function PublicLayout() {
   const { pathname } = useLocation();
@@ -22,7 +23,7 @@ function PublicLayout() {
       <header className="auth-topbar">
         <div className="auth-container auth-topbar-inner">
           <Link to="/" className="auth-logo" aria-label="GPMP home page">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             <span>
               <strong>GPMP</strong>
               <small>Al-Yamamah University</small>
@@ -47,7 +48,7 @@ function PublicLayout() {
       <footer className="auth-landing-footer">
         <div className="auth-container auth-landing-footer-inner">
           <span className="auth-landing-footer-brand">
-            <img src="/logo.jpeg" alt="" />
+            <img src={asset('logo.jpeg')} alt="" />
             GPMP — Graduation Project Management Platform
           </span>
           <span>Al-Yamamah University</span>

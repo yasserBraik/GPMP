@@ -252,6 +252,15 @@ data**. To keep your data, run only the new migration instead (MySQL must be run
 /c/xampp/mysql/bin/mysql.exe -u root gpmp < database/migrations/001_add_posters.sql
 ```
 
+### Online demo (GitHub Pages)
+
+`npm run build:demo` builds a copy of the website into `dist-demo/` that runs entirely in the
+browser on recorded sample data, so it can be hosted on GitHub Pages (no server or database).
+Signing in with the demo accounts and opening every page works; changes are refused with a
+"read-only demo" message. The recorded data goes in `dist-demo/demo/data.json` (with the poster
+images in `dist-demo/demo/posters/`). The demo is served from `/GPMP/`; set `DEMO_BASE` in `.env`
+for another folder name.
+
 ### Useful commands
 
 | Command | What it does |

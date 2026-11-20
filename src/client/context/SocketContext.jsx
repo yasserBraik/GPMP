@@ -9,6 +9,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { getToken } from '../api/client.js';
 import { useAuth } from './AuthContext.jsx';
+import { IS_DEMO } from '../config/demo.js';
 
 const SocketContext = createContext({ socket: null, connected: false });
 
@@ -21,7 +22,7 @@ export function SocketProvider({ children }) {
   // Connect when a user logs in; disconnect on logout or when another user logs in
   useEffect(() => {
     const token = getToken();
-    if (!userId || !token) return;
+    if (!userId || !token || IS_DEMO) return; // the demo has no server to connect to
 
     // Same address as the website; Vite forwards /socket.io to the backend in development.
     // `auth` is a function so every reconnect sends the newest saved token.

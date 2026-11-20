@@ -14,6 +14,7 @@ uploads/*
 
 # Production build of the React client (re-created with "npm run build")
 dist/
+dist-demo/
 
 # Database and upload backups (NFR-5, see the README) - they contain private data
 backups/
